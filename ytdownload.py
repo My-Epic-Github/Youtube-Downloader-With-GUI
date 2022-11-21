@@ -5,6 +5,8 @@ from pytube.cli import on_progress
 import os, winshell, win32com.client, pythoncom
 import PySimpleGUI as sg
 import ffmpeg
+import subprocess
+import random
 sg.theme('DarkGrey1')
 
 desk = winshell.desktop()
@@ -22,7 +24,7 @@ shortcut.IconLocation = icon
 shortcut.save()
 
 layout = [
-    [sg.Text('Video URL:'),sg.Input(key='-INPUT-'), sg.DropDown(['144p', '360p','720p', '1080p' ], key='-RES-' )],
+    [sg.Text('Video URL:'),sg.Input(key='-INPUT-'), sg.DropDown(['144p', '360p','720p', '1080p', '1440p', '2160p' ], key='-RES-' )],
         [sg.Button('Download', key='Download'), sg.Checkbox(('Download Without Video'), enable_events=True, default=False, key='box')],
         
         
@@ -44,22 +46,29 @@ while True:
         
             input_value = values['-INPUT-']
             yt = YouTube(input_value)
+           
             res_value = values['-RES-']
             vid = yt.streams.filter(only_video=True, resolution=res_value).first().download(output_path='C:\Temp',filename='Vid.mp4')
             
-            aud = yt.streams.filter(only_audio=True).first().download(output_path='C:\Temp', filename='Aud.mp3')
+            aud = yt.streams.filter(only_audio=True).first().download(output_path='C:\Temp', filename='Aud.mp4')
             
-            video = ffmpeg.input(f'C:\Temp\Vid.mp4')
-            audio = ffmpeg.input(f'C:\Temp\Aud.mp3')
-            merged_audio = ffmpeg.filter([video.audio, audio], 'amix')
-            ffmpeg.concat(video, merged_audio, v=1, a=1).output(f'{desk}\Youtube Downloads') ,sg.popup('Download Complete')
+            
+            
+            
+            subprocess.run(f'ffmpeg -i C:\Temp\Vid.mp4 -i C:\Temp\Aud.mp4 -c copy {desk}\Youtube\DownloadedVideo{random.randint(1,1000000000)}.mp4',  shell=True)
+            sg.popup('Download Complete!')
+            os.remove('C:\Temp\Vid.mp4')
+            os.remove('C:\Temp\Aud.mp4')
+            os.remove(f'{desk}\Youtube\{yt.title}.mp4')
+            
+            
             
             
                 
         if event == 'Download' and values['box'] == False and values['-RES-'] == '144p' or '360p' or '720':
-            filetype = '.3gpp'
+            
             yt = YouTube(input_value)
-            vid = yt.streams.filter(resolution=res_value).first().download(f'{desk}\Youtube Downloads' )
+            vid = yt.streams.filter(resolution=res_value).first().download(output_path=f'{desk}\Youtube', filename=f'{yt.title}' )
             sg.popup(f'Download Complete!')
                 
 
@@ -70,7 +79,7 @@ while True:
                 filetype = '.mp3'
                 yt = YouTube(input_value)
                 res_value = values['-RES-']
-                vid = yt.streams.filter(only_audio=True,).first().download(f'{desk}\Youtube Downloads')
+                vid = yt.streams.filter(only_audio=True,).first().download(f'{desk}\Youtube')
                 sg.popup('Download Complete!')
         if values['box'] == True:
             window['-RES-'].update(visible=False)
@@ -94,7 +103,8 @@ while True:
 
 
     except Exception as e:
-        sg.popup_error(e)
+        print(e)
+        sg.popup(f"Something May Have Gone Wrong, Or the Program is Being Weird. If you Downloaded at 1080p or Higher Don't Fret this is Normal and I'm Working on a fix.\nError:\n{e}")
 
 
 
